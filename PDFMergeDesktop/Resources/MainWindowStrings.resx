@@ -126,6 +126,9 @@
   <data name="Browse" xml:space="preserve">
     <value>Browse</value>
   </data>
+  <data name="CouldNotMerge" xml:space="preserve">
+    <value>The selected files could not be merged.</value>
+  </data>
   <data name="FileFilter" xml:space="preserve">
     <value>PDF file (*.pdf)|*.pdf</value>
   </data>
@@ -137,6 +140,12 @@
   </data>
   <data name="Merge" xml:space="preserve">
     <value>Merge</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>Down</value>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>Up</value>
   </data>
   <data name="OutputPath" xml:space="preserve">
     <value>Output Path</value>

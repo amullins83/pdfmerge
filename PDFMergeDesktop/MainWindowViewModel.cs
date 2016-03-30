@@ -29,11 +29,6 @@
         private RelayCommand browseInputCommand;
 
         /// <summary>
-        ///  Command to browse for output files.
-        /// </summary>
-        private RelayCommand browseOutputCommand;
-
-        /// <summary>
         ///  Command to add an input path to the collection.
         /// </summary>
         private RelayCommand addCommand;
@@ -47,6 +42,16 @@
         ///  Command to perform the merge task.
         /// </summary>
         private RelayCommand mergeCommand;
+
+        /// <summary>
+        ///  Command to move the selected item up.
+        /// </summary>
+        private RelayCommand moveUpCommand;
+
+        /// <summary>
+        ///  Command to move the selected item down.
+        /// </summary>
+        private RelayCommand downCommand;
 
         /// <summary>
         ///  The progress for the current operation, if any.
@@ -64,6 +69,11 @@
         private bool isProcessing = false;
 
         /// <summary>
+        ///  The index of the selected item in the list.
+        /// </summary>
+        private int selectedIndex = 0;
+
+        /// <summary>
         ///  Initializes a new instance of the
         ///  <see cref="MainWindowViewModel"/> class.
         /// </summary>
@@ -73,8 +83,6 @@
             merger.Progress = this;
             browseInputCommand = new RelayCommand(
                 new Action<object>(BrowseInputExecute));
-            browseOutputCommand = new RelayCommand(
-                new Action<object>(BrowseOutputExecute));
             addCommand = new RelayCommand(
                 new Action<object>(AddExecute),
                 new Predicate<object>(AddCanExecute));
@@ -84,6 +92,12 @@
             mergeCommand = new RelayCommand(
                 new Action<object>(MergeExecute),
                 new Predicate<object>(MergeCanExecute));
+            moveUpCommand = new RelayCommand(
+                new Action<object>(UpExecute),
+                new Predicate<object>(UpCanExecute));
+            downCommand = new RelayCommand(
+                new Action<object>(DownExecute),
+                new Predicate<object>(DownCanExecute));
         }
 
         /// <summary>
@@ -172,19 +186,27 @@
         }
 
         /// <summary>
-        ///  Gets the command to browse for an output path.
-        /// </summary>
-        public ICommand BrowseOutputCommand
-        {
-            get { return browseOutputCommand; }
-        }
-
-        /// <summary>
         ///  Gets the command to merge the files.
         /// </summary>
         public ICommand MergeCommand
         {
             get { return mergeCommand; }
+        }
+
+        /// <summary>
+        ///  Gets the command to move an item up the list.
+        /// </summary>
+        public ICommand UpCommand
+        {
+            get { return moveUpCommand; }
+        }
+
+        /// <summary>
+        ///  Gets the command to move an item down the list.
+        /// </summary>
+        public ICommand DownCommand
+        {
+            get { return downCommand; }
         }
 
         /// <summary>
@@ -240,6 +262,28 @@
         }
 
         /// <summary>
+        ///  Gets or sets the selected index into the list of input paths.
+        /// </summary>
+        public int SelectedIndex
+        {
+            get
+            {
+                return selectedIndex;
+            }
+
+            set
+            {
+                if (selectedIndex != value)
+                {
+                    selectedIndex = value;
+                    OnPropertyChanged("SelectedIndex");
+                    moveUpCommand.RaiseCanExecuteChanged();
+                    downCommand.RaiseCanExecuteChanged();
+                }
+            }
+        }
+
+        /// <summary>
         ///  Update the percent completion.
         /// </summary>
         /// <param name="progress">The new completion percentage.</param>
@@ -267,22 +311,11 @@
         /// <param name="parameter">The command parameter (ignored).</param>
         private void BrowseInputExecute(object parameter)
         {
-            InputPath = BrowseFile.Open(
+            var paths = BrowseFile.Open(
                 Resources.MainWindowStrings.AddInput,
                 Resources.MainWindowStrings.FileFilter,
                 App.Current.MainWindow);
-        }
-
-        /// <summary>
-        ///  Execute the browse output command.
-        /// </summary>
-        /// <param name="parameter">The command parameter (ignored).</param>
-        private void BrowseOutputExecute(object parameter)
-        {
-            OutputPath = BrowseFile.Save(
-                Resources.MainWindowStrings.SetOutput,
-                Resources.MainWindowStrings.FileFilter,
-                App.Current.MainWindow);
+            InputPath = string.Join(";", paths);
         }
 
         /// <summary>
@@ -292,7 +325,12 @@
         private void AddExecute(object parameter)
         {
             var originalCanMerge = MergeCanExecute(null);
-            merger.InputPaths.Add(inputPath);
+            var paths = inputPath.Split(';');
+            foreach (var path in paths)
+            {
+                merger.InputPaths.Add(path);
+            }
+
             InputPath = string.Empty;
             if (originalCanMerge != MergeCanExecute(null))
             {
@@ -337,8 +375,19 @@
         /// <param name="parameter">The command parameter (ignored).</param>
         private void MergeExecute(object parameter)
         {
-            merger.MergeAsync().ContinueWith(new Action<Task>((task) => IsProcessing = false));
-            IsProcessing = true;
+            OutputPath = BrowseFile.Save(
+                Resources.MainWindowStrings.SetOutput,
+                Resources.MainWindowStrings.FileFilter,
+                App.Current.MainWindow);
+            if (merger.CanMerge)
+            {
+                merger.MergeAsync().ContinueWith(new Action<Task>((task) => IsProcessing = false));
+                IsProcessing = true;
+            }
+            else
+            {
+                System.Windows.MessageBox.Show(Resources.MainWindowStrings.CouldNotMerge);
+            }
         }
 
         /// <summary>
@@ -348,7 +397,45 @@
         /// <returns>A value indicating whether the merge command can be executed.</returns>
         private bool MergeCanExecute(object parameter)
         {
-            return merger.CanMerge;
+            return InputPaths.Count > 1;
+        }
+
+        /// <summary>
+        ///  Execute the "up" command.
+        /// </summary>
+        /// <param name="parameter">The command parameter (ignored)</param>
+        private void UpExecute(object parameter)
+        {
+            InputPaths.Move(selectedIndex, selectedIndex - 1);
+        }
+
+        /// <summary>
+        ///  Determine whether the up command can execute.
+        /// </summary>
+        /// <param name="parameter">The command parameter (ignored)</param>
+        /// <returns>A value indicating whether the up command can be executed.</returns>
+        private bool UpCanExecute(object parameter)
+        {
+            return selectedIndex > 0;
+        }
+
+        /// <summary>
+        ///  Execute the "down" command.
+        /// </summary>
+        /// <param name="parameter">The command parameter (ignored)</param>
+        private void DownExecute(object parameter)
+        {
+            InputPaths.Move(selectedIndex, selectedIndex + 1);
+        }
+
+        /// <summary>
+        ///  Determine whether the down command can execute.
+        /// </summary>
+        /// <param name="parameter">The command parameter (ignored)</param>
+        /// <returns>A value indicating whether the down command can be executed.</returns>
+        private bool DownCanExecute(object parameter)
+        {
+            return selectedIndex >= 0 && selectedIndex < InputPaths.Count - 1;
         }
     }
 }

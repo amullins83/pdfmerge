@@ -1,6 +1,8 @@
 ﻿namespace PDFMergeDesktop
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Windows;
     using Microsoft.Win32;
 
@@ -15,7 +17,7 @@
         /// <param name="title">The title for the dialog.</param>
         /// <param name="filter">The file extension filter.</param>
         /// <returns>The selected path or null.</returns>
-        public static string Open(string title, string filter)
+        public static IEnumerable<string> Open(string title, string filter)
         {
             return Open(title, filter, null);
         }
@@ -27,9 +29,11 @@
         /// <param name="filter">The file extension filter.</param>
         /// <param name="owner">The owning window for the browse dialog.</param>
         /// <returns>The selected path or null.</returns>
-        public static string Open(string title, string filter, Window owner)
+        public static IEnumerable<string> Open(string title, string filter, Window owner)
         {
-            return RunDialog(title, filter, owner, new OpenFileDialog());
+            var open = new OpenFileDialog();
+            open.Multiselect = true;
+            return RunDialog(title, filter, owner, open);
         }
 
         /// <summary>
@@ -52,7 +56,7 @@
         /// <returns>The selected path or null.</returns>
         public static string Save(string title, string filter, Window owner)
         {
-            return RunDialog(title, filter, owner, new SaveFileDialog());
+            return RunDialog(title, filter, owner, new SaveFileDialog()).FirstOrDefault();
         }
 
         /// <summary>
@@ -63,17 +67,17 @@
         /// <param name="owner">The owning window for the browse dialog.</param>
         /// <param name="dialog">The dialog to show.</param>
         /// <returns>The selected path or null.</returns>
-        private static string RunDialog(string title, string filter, Window owner, FileDialog dialog)
+        private static IEnumerable<string> RunDialog(string title, string filter, Window owner, FileDialog dialog)
         {
             dialog.Title = title;
             dialog.Filter = filter;
             bool? fileCaptured = dialog.ShowDialog(owner);
             if (fileCaptured == true)
             {
-                return dialog.FileName;
+                return dialog.FileNames;
             }
 
-            return null;
+            return new List<string>();
         }
     }
 }

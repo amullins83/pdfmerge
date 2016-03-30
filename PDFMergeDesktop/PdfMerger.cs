@@ -112,8 +112,16 @@
         {
             get
             {
-                return outputPath != string.Empty &&
-                       inputPaths.Count > 1;
+                try
+                {
+                    outputPath = Path.GetFullPath(outputPath);
+                }
+                catch
+                {
+                    return false;
+                }
+
+                return inputPaths.Count > 1;
             }
         }
 
