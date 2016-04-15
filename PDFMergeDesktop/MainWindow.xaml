@@ -1,6 +1,7 @@
 ﻿<Window x:Class="PDFMergeDesktop.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:local="clr-namespace:PDFMergeDesktop"
         xmlns:resource="clr-namespace:PDFMergeDesktop.Resources"
         Title="MainWindow" Height="350" Width="525">
@@ -45,7 +46,8 @@
             <TextBlock Text="{x:Static resource:MainWindowStrings.InputPath}"
                        x:Uid="InputPathLabel"
                        Style="{StaticResource DefaultTextBlockStyle}"/>
-            <TextBox Grid.Row="1" Text="{Binding InputPath, Mode=TwoWay}"
+            <TextBox Grid.Row="1" Text="{Binding InputPath, Mode=TwoWay,
+                     UpdateSourceTrigger=PropertyChanged}"
                      Style="{StaticResource DefaultTextBoxStyle}"/>
             <Button Grid.Row="1" Grid.Column="1"
                     Content="{x:Static resource:MainWindowStrings.Browse}"
@@ -63,10 +65,14 @@
                     Style="{StaticResource DefaultButtonStyle}"
                     Command="{Binding RemoveCommand, Mode=OneTime}"/>
         </Grid>
-        <ListBox ItemsSource="{Binding InputPaths}"
+        <local:StringItemDragDropListBox
+                 x:Name="InputsBox"
+                 ItemsSource="{Binding InputPaths}"
                  Grid.Row="2"
                  SelectedValue="{Binding InputPath}"
                  SelectedIndex="{Binding SelectedIndex, Mode=OneWayToSource}"
+                 SelectionChanged="StringItemDragDropListBox_SelectionChanged"
+                 SelectionMode="Extended"
                  Margin="5"
                  Visibility="{Binding IsProcessing,
                     Converter={StaticResource BooleanToVisibilityConverter},
@@ -76,21 +82,8 @@
             Value="{Binding PercentComplete}"
             Visibility="{Binding IsProcessing,
                 Converter={StaticResource BooleanToVisibilityConverter}}"/>
-        <Grid Grid.Row="3">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="2*"/>
-            </Grid.ColumnDefinitions>
-            <Button Grid.Column="0" Style="{StaticResource BottomButtonStyle}" Content="{x:Static resource:MainWindowStrings.MoveUp}"
-                    x:Uid="UpButton"
-                    Command="{Binding UpCommand}"/>
-            <Button Grid.Column="1" Style="{StaticResource BottomButtonStyle}" Content="{x:Static resource:MainWindowStrings.MoveDown}"
-                    x:Uid="DownButton"
-                    Command="{Binding DownCommand}"/>
-            <Button Grid.Column="2" Style="{StaticResource BottomButtonStyle}" Content="{x:Static resource:MainWindowStrings.Merge}"
+        <Button Grid.Row="3" Style="{StaticResource BottomButtonStyle}" Content="{x:Static resource:MainWindowStrings.Merge}"
                     x:Uid="MergeButton"
                     Command="{Binding MergeCommand}" Background="#FF33B23E" Foreground="White"/>
-        </Grid>
     </Grid>
 </Window>

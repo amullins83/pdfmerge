@@ -1,6 +1,7 @@
 ﻿namespace PDFMergeDesktop
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.ComponentModel;
     using System.Linq;
@@ -44,16 +45,6 @@
         private RelayCommand mergeCommand;
 
         /// <summary>
-        ///  Command to move the selected item up.
-        /// </summary>
-        private RelayCommand moveUpCommand;
-
-        /// <summary>
-        ///  Command to move the selected item down.
-        /// </summary>
-        private RelayCommand downCommand;
-
-        /// <summary>
         ///  The progress for the current operation, if any.
         /// </summary>
         private int percentComplete = 0;
@@ -92,12 +83,6 @@
             mergeCommand = new RelayCommand(
                 new Action<object>(MergeExecute),
                 new Predicate<object>(MergeCanExecute));
-            moveUpCommand = new RelayCommand(
-                new Action<object>(UpExecute),
-                new Predicate<object>(UpCanExecute));
-            downCommand = new RelayCommand(
-                new Action<object>(DownExecute),
-                new Predicate<object>(DownCanExecute));
         }
 
         /// <summary>
@@ -144,19 +129,10 @@
             {
                 if (value != inputPath)
                 {
-                    var originalAddCanExecute = AddCanExecute(null);
-                    var originalRemoveCanExecute = RemoveCanExecute(null);
                     inputPath = value;
                     OnPropertyChanged("InputPath");
-                    if (originalAddCanExecute != AddCanExecute(null))
-                    {
-                        addCommand.RaiseCanExecuteChanged();
-                    }
-
-                    if (originalRemoveCanExecute != RemoveCanExecute(null))
-                    {
-                        removeCommand.RaiseCanExecuteChanged();
-                    }
+                    addCommand.RaiseCanExecuteChanged();
+                    removeCommand.RaiseCanExecuteChanged();
                 }
             }
         }
@@ -191,22 +167,6 @@
         public ICommand MergeCommand
         {
             get { return mergeCommand; }
-        }
-
-        /// <summary>
-        ///  Gets the command to move an item up the list.
-        /// </summary>
-        public ICommand UpCommand
-        {
-            get { return moveUpCommand; }
-        }
-
-        /// <summary>
-        ///  Gets the command to move an item down the list.
-        /// </summary>
-        public ICommand DownCommand
-        {
-            get { return downCommand; }
         }
 
         /// <summary>
@@ -256,7 +216,7 @@
         /// <summary>
         ///  Gets the collection of input paths to merge.
         /// </summary>
-        public ObservableCollection<string> InputPaths
+        public ObservableCollection<StringItem> InputPaths
         {
             get { return merger.InputPaths; }
         }
@@ -277,10 +237,17 @@
                 {
                     selectedIndex = value;
                     OnPropertyChanged("SelectedIndex");
-                    moveUpCommand.RaiseCanExecuteChanged();
-                    downCommand.RaiseCanExecuteChanged();
                 }
             }
+        }
+
+        /// <summary>
+        ///  Gets or sets a collection of selected items.
+        /// </summary>
+        public IEnumerable<StringItem> SelectedItems
+        {
+            get;
+            set;
         }
 
         /// <summary>
@@ -315,7 +282,10 @@
                 Resources.MainWindowStrings.AddInput,
                 Resources.MainWindowStrings.FileFilter,
                 App.Current.MainWindow);
-            InputPath = string.Join(";", paths);
+            if (paths.Any())
+            {
+                AddPaths(paths);
+            }
         }
 
         /// <summary>
@@ -324,18 +294,23 @@
         /// <param name="parameter">The command parameter (ignored).</param>
         private void AddExecute(object parameter)
         {
-            var originalCanMerge = MergeCanExecute(null);
             var paths = inputPath.Split(';');
+            AddPaths(paths);
+        }
+
+        /// <summary>
+        ///  Add the given paths to the input paths collection.
+        /// </summary>
+        /// <param name="paths">The collection of paths to add.</param>
+        private void AddPaths(IEnumerable<string> paths)
+        {
             foreach (var path in paths)
             {
-                merger.InputPaths.Add(path);
+                merger.InputPaths.Add(new StringItem(path));
             }
 
             InputPath = string.Empty;
-            if (originalCanMerge != MergeCanExecute(null))
-            {
-                mergeCommand.RaiseCanExecuteChanged();
-            }
+            mergeCommand.RaiseCanExecuteChanged();
         }
 
         /// <summary>
@@ -354,7 +329,14 @@
         /// <param name="parameter">The command parameter (ignored).</param>
         private void RemoveExecute(object parameter)
         {
-            merger.InputPaths.Remove(inputPath);
+            // Copy to list to prevent changing during loop
+            foreach (var item in SelectedItems.ToList())
+            {
+                InputPaths.Remove(InputPaths.FirstOrDefault(pathItem =>
+                    StringComparer.CurrentCultureIgnoreCase.Equals(pathItem.Text, item.Text)));
+            }
+
+            SelectedItems = null;
             InputPath = string.Empty;
         }
 
@@ -365,8 +347,7 @@
         /// <returns>A value indicating whether the remove command can be executed.</returns>
         private bool RemoveCanExecute(object parameter)
         {
-            return merger.InputPaths.Any(path =>
-                StringComparer.CurrentCultureIgnoreCase.Equals(path, inputPath));
+            return SelectedItems != null && SelectedItems.Any();
         }
 
         /// <summary>
@@ -379,6 +360,12 @@
                 Resources.MainWindowStrings.SetOutput,
                 Resources.MainWindowStrings.FileFilter,
                 App.Current.MainWindow);
+
+            if (string.IsNullOrWhiteSpace(OutputPath))
+            {
+                return;
+            }
+
             if (merger.CanMerge)
             {
                 merger.MergeAsync().ContinueWith(new Action<Task>((task) => IsProcessing = false));
@@ -398,44 +385,6 @@
         private bool MergeCanExecute(object parameter)
         {
             return InputPaths.Count > 1;
-        }
-
-        /// <summary>
-        ///  Execute the "up" command.
-        /// </summary>
-        /// <param name="parameter">The command parameter (ignored)</param>
-        private void UpExecute(object parameter)
-        {
-            InputPaths.Move(selectedIndex, selectedIndex - 1);
-        }
-
-        /// <summary>
-        ///  Determine whether the up command can execute.
-        /// </summary>
-        /// <param name="parameter">The command parameter (ignored)</param>
-        /// <returns>A value indicating whether the up command can be executed.</returns>
-        private bool UpCanExecute(object parameter)
-        {
-            return selectedIndex > 0;
-        }
-
-        /// <summary>
-        ///  Execute the "down" command.
-        /// </summary>
-        /// <param name="parameter">The command parameter (ignored)</param>
-        private void DownExecute(object parameter)
-        {
-            InputPaths.Move(selectedIndex, selectedIndex + 1);
-        }
-
-        /// <summary>
-        ///  Determine whether the down command can execute.
-        /// </summary>
-        /// <param name="parameter">The command parameter (ignored)</param>
-        /// <returns>A value indicating whether the down command can be executed.</returns>
-        private bool DownCanExecute(object parameter)
-        {
-            return selectedIndex >= 0 && selectedIndex < InputPaths.Count - 1;
         }
     }
 }

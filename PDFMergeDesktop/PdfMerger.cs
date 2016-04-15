@@ -22,7 +22,7 @@
         /// <summary>
         ///  Collection of paths to PDF files to merge.
         /// </summary>
-        private ObservableCollection<string> inputPaths = new ObservableCollection<string>();
+        private ObservableCollection<StringItem> inputPaths = new ObservableCollection<StringItem>();
 
         /// <summary>
         ///  The writer object for this task.
@@ -77,7 +77,7 @@
         /// <summary>
         ///  Gets a collection of paths to PDF files to merge.
         /// </summary>
-        public ObservableCollection<string> InputPaths
+        public ObservableCollection<StringItem> InputPaths
         {
             get
             {
@@ -183,7 +183,7 @@
             
             foreach (var path in inputPaths)
             {
-                await AddPdf(path);
+                await AddPdf(path.Text);
                 progress.Report(++completedCount * 100 / fileCount);
             }
         }
