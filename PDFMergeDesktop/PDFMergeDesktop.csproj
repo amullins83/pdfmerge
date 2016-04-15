@@ -70,7 +70,6 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>MainWindowStrings.resx</DependentUpon>
     </Compile>
-    <Compile Include="StringDragDropListBox.cs" />
     <Compile Include="StringItem.cs" />
     <Compile Include="StringItemDragDropListBox.cs" />
     <Page Include="MainWindow.xaml">
