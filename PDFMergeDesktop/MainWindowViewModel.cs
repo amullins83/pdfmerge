@@ -3,7 +3,9 @@
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Collections.Specialized;
     using System.ComponentModel;
+    using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
     using System.Windows.Input;
@@ -72,6 +74,7 @@
         {
             merger = new PdfMerger();
             merger.Progress = this;
+            InputPaths.CollectionChanged += RaiseCanMergeChanged;
             browseInputCommand = new RelayCommand(
                 new Action<object>(BrowseInputExecute));
             addCommand = new RelayCommand(
@@ -310,7 +313,6 @@
             }
 
             InputPath = string.Empty;
-            mergeCommand.RaiseCanExecuteChanged();
         }
 
         /// <summary>
@@ -320,7 +322,10 @@
         /// <returns>A value indicating whether the add command can be executed.</returns>
         private bool AddCanExecute(object parameter)
         {
-            return inputPath != null && inputPath != string.Empty;
+            return inputPath != null &&
+                   !Path.GetInvalidPathChars().Any(c => inputPath.Contains(c)) &&
+                   StringComparer.CurrentCultureIgnoreCase.Equals(Path.GetExtension(inputPath), ".pdf") &&
+                   File.Exists(inputPath);
         }
 
         /// <summary>
@@ -385,6 +390,16 @@
         private bool MergeCanExecute(object parameter)
         {
             return InputPaths.Count > 1;
+        }
+
+        /// <summary>
+        ///  Update the merge command's CanExecute value.
+        /// </summary>
+        /// <param name="sender">The collection that raised the event (ignored).</param>
+        /// <param name="e">The event arguments (ignored).</param>
+        private void RaiseCanMergeChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            mergeCommand.RaiseCanExecuteChanged();
         }
     }
 }
