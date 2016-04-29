@@ -1,9 +1,9 @@
 ﻿namespace PDFMergeDesktop
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Management.Automation;
     using System.Windows;
     using System.Windows.Controls;
@@ -43,8 +43,13 @@
                 new EventSetter(
                     DropEvent,
                     new DragEventHandler(DropItem)));
+            ItemContainerStyle.Setters.Add(
+                new EventSetter(
+                    DragOverEvent,
+                    new DragEventHandler(CheckItem)));
 
             Drop += DropItem;
+            DragOver += CheckItem;
             AllowDrop = true;
         }
 
@@ -115,7 +120,7 @@
         /// <param name="e">The drag event arguments.</param>
         private void DropItem(object sender, DragEventArgs e)
         {
-            int targetIndex = 0;
+            int targetIndex = Items.Count;
             if (sender is ListBoxItem)
             {
                 // The drop has a specific target item
@@ -147,7 +152,7 @@
 
                 for (int i = 0, numDroppedFiles = 0; i < files.Length; i++)
                 {
-                    if (new WildcardPattern(FileFilter).IsMatch(Path.GetFileName(files[i])))
+                    if (IsAcceptablePath(files[i]))
                     {
                         var item = new T();
                         item.Text = files[i];
@@ -155,6 +160,61 @@
                     }
                 }
             }
+        }
+
+        /// <summary>
+        ///  Check if any item in the given data collection matches our filter.
+        /// </summary>
+        /// <param name="sender">The object that raised the event (ignored, assumed this).</param>
+        /// <param name="e">The event arguments, including the data.</param>
+        private void CheckItem(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if (!files.Any(f => IsAcceptablePath(f)))
+                {
+                    e.Effects = DragDropEffects.None;
+                    e.Handled = true;
+                }
+            }
+        }
+
+        /// <summary>
+        ///  Determine if the given path can be added.
+        /// </summary>
+        /// <param name="path">The path to inspect.</param>
+        /// <returns>A value indicating whether the path can be added.</returns>
+        private bool IsAcceptablePath(string path)
+        {
+            return IsUnique(path) && IsFilterMatch(path);
+        }
+
+        /// <summary>
+        ///  Determine if the given path matches our filter.
+        /// </summary>
+        /// <param name="path">The path to inspect.</param>
+        /// <returns>A value indicating whether the given path matches our filter.</returns>
+        private bool IsFilterMatch(string path)
+        {
+            return new WildcardPattern(FileFilter).IsMatch(Path.GetFileName(path));
+        }
+
+        /// <summary>
+        ///  Determine if the given path is already in the list.
+        /// </summary>
+        /// <param name="path">The path to inspect.</param>
+        /// <returns>A value indicating whether the given path is unique from our list.</returns>
+        private bool IsUnique(string path)
+        {
+            var items = ItemsSource as IList<T>;
+            if (items == null)
+            {
+                return true;
+            }
+
+            return !items.Any(item =>
+                StringComparer.CurrentCultureIgnoreCase.Equals(item.Text, path));
         }
 
         /// <summary>
