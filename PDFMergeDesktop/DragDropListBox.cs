@@ -1,7 +1,10 @@
 ﻿namespace PDFMergeDesktop
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
+    using System.IO;
+    using System.Management.Automation;
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Input;
@@ -12,8 +15,14 @@
     /// </summary>
     /// <typeparam name="T">The type of item displayed in the list.</typeparam>
     public class DragDropListBox<T> : ListBox
-        where T : class
+        where T : class, ITextable, new()
     {
+        /// <summary>
+        ///  Dependency property to get and set a filter for accepting dropped files.
+        /// </summary>
+        public static readonly DependencyProperty FileFilterProperty =
+            DependencyProperty.Register("FileFilter", typeof(string), typeof(DragDropListBox<T>), new PropertyMetadata("*.*"));
+
         /// <summary>
         ///  Captures the starting point of a drag operation.
         /// </summary>
@@ -34,7 +43,27 @@
                 new EventSetter(
                     DropEvent,
                     new DragEventHandler(DropItem)));
+
+            Drop += DropItem;
             AllowDrop = true;
+        }
+
+        /// <summary>
+        ///  Gets or sets the filter to determine whether a file should be accepted.
+        /// </summary>
+        public string FileFilter
+        {
+            get { return (string)GetValue(FileFilterProperty); }
+            set { SetValue(FileFilterProperty, value); }
+        }
+
+        /// <summary>
+        ///  Use our custom list box item class.
+        /// </summary>
+        /// <returns>A new instance of the <see cref="DeferredSelectionListItem"/> class.</returns>
+        protected override DependencyObject GetContainerForItemOverride()
+        {
+            return new DeferredSelectionListItem();
         }
 
         /// <summary>
@@ -50,12 +79,21 @@
         {
             var point = e.GetPosition(null);
             var dragDistance = point - dragStartPoint;
-            if (e.LeftButton == MouseButtonState.Pressed && InBounds(dragDistance))
+            if (e.LeftButton == MouseButtonState.Pressed && IsOverThreshold(dragDistance))
             {
-                var item = FindVisualAncestor<ListBoxItem>((DependencyObject)e.OriginalSource);
+                var item = sender as FrameworkElement;
                 if (item != null)
                 {
-                    DragDrop.DoDragDrop(item, item.DataContext, DragDropEffects.Move);
+                    var selection = new List<T>();
+                    foreach (var dataItem in SelectedItems)
+                    {
+                        if (dataItem is T)
+                        {
+                            selection.Add((T)dataItem);
+                        }
+                    }
+
+                    DragDrop.DoDragDrop(item, selection, DragDropEffects.Move);
                 }
             }
         }
@@ -77,29 +115,61 @@
         /// <param name="e">The drag event arguments.</param>
         private void DropItem(object sender, DragEventArgs e)
         {
+            int targetIndex = 0;
             if (sender is ListBoxItem)
             {
-                var source = e.Data.GetData(typeof(T)) as T;
+                // The drop has a specific target item
                 var target = ((ListBoxItem)sender).DataContext as T;
-                int sourceIndex = Items.IndexOf(source);
-                int targetIndex = Items.IndexOf(target);
-                Move(sourceIndex, targetIndex);
+                targetIndex = Items.IndexOf(target);
+                var source = e.Data.GetData(typeof(List<T>)) as List<T>;
+                if (source != null)
+                {
+                    // The source comes from our drag start
+                    foreach (var dataItem in source)
+                    {
+                        var sourceIndex = Items.IndexOf(dataItem);
+                        Move(sourceIndex, targetIndex);
+                    }
+
+                    return;
+                }
+            }
+            
+            // Allow dropping files from other windows
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                var items = ItemsSource as IList<T>;
+                if (items == null)
+                {
+                    return;
+                }
+
+                for (int i = 0, numDroppedFiles = 0; i < files.Length; i++)
+                {
+                    if (new WildcardPattern(FileFilter).IsMatch(Path.GetFileName(files[i])))
+                    {
+                        var item = new T();
+                        item.Text = files[i];
+                        items.Insert(targetIndex + numDroppedFiles, item);
+                    }
+                }
             }
         }
 
         /// <summary>
-        ///  Determine whether the drag distance is within accepted bounds.
+        ///  Determine whether the drag distance is above a minimum threshold.
         /// </summary>
         /// <param name="dragDistance">A vector showing the horizontal and vertical distance of the drag action.</param>
-        /// <returns>A value indicating whether the drag distance is within accepted bounds.</returns>
-        private bool InBounds(Vector dragDistance)
+        /// <returns>A value indicating whether the drag distance is over a minimum threshold.</returns>
+        private bool IsOverThreshold(Vector dragDistance)
         {
             return Math.Abs(dragDistance.X) > SystemParameters.MinimumHorizontalDragDistance ||
                    Math.Abs(dragDistance.Y) > SystemParameters.MinimumVerticalDragDistance;
         }
 
         /// <summary>
-        ///  Move an item in the data context collection from the given source index to the given target index.
+        ///  Move a group of items in the data context collection from the given source list to the given target index.
         /// </summary>
         /// <param name="sourceIndex">The index of the item to move.</param>
         /// <param name="targetIndex">The index to which the item should be moved.</param>
@@ -110,8 +180,7 @@
             {
                 return;
             }
-
-            var source = items[sourceIndex];
+            
             int removeIndex = sourceIndex;
             int finalTarget = targetIndex;
             if (sourceIndex < targetIndex)
@@ -122,8 +191,8 @@
             {
                 removeIndex++;
             }
-
-            items.Insert(finalTarget, source);
+            
+            items.Insert(finalTarget, items[sourceIndex]);
             items.RemoveAt(removeIndex);
         }
 
@@ -152,6 +221,54 @@
             }
 
             return null;
+        }
+
+        /// <summary>
+        ///  ListBoxItem child class to defer selection behavior.
+        /// </summary>
+        private class DeferredSelectionListItem : ListBoxItem
+        {
+            /// <summary>
+            ///  Indicates whether selection should be deferred in case of starting a drag.
+            /// </summary>
+            private bool shouldDeferSelection = false;
+
+            /// <summary>
+            ///  Defer selection behavior in case of drag start.
+            /// </summary>
+            /// <param name="e">The mouse event arguments, including a click count.</param>
+            protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
+            {
+                if (e.ClickCount == 1 && IsSelected)
+                {
+                    shouldDeferSelection = true;
+                }
+                else
+                {
+                    base.OnMouseLeftButtonDown(e);
+                }
+            }
+
+            /// <summary>
+            ///  Complete click action (including the mouse down action if deferred).
+            /// </summary>
+            /// <param name="e">The event arguments (passed through).</param>
+            protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
+            {
+                if (shouldDeferSelection)
+                {
+                    try
+                    {
+                        base.OnMouseLeftButtonDown(e);
+                    }
+                    finally
+                    {
+                        shouldDeferSelection = false;
+                    }
+                }
+
+                base.OnMouseLeftButtonUp(e);
+            }
         }
     }
 }

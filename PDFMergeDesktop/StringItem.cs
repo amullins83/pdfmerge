@@ -3,8 +3,16 @@
     /// <summary>
     ///  A wrapper class around strings.
     /// </summary>
-    public class StringItem
+    public class StringItem : ITextable
     {
+        /// <summary>
+        ///  Initializes a new instance of the <see cref="StringItem"/> class.
+        /// </summary>
+        public StringItem()
+        {
+            Text = string.Empty;
+        }
+
         /// <summary>
         ///  Initializes a new instance of the <see cref="StringItem"/> class.
         /// </summary>

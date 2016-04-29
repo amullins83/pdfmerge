@@ -69,6 +69,7 @@
                  x:Name="InputsBox"
                  ItemsSource="{Binding InputPaths}"
                  Grid.Row="2"
+                 FileFilter="*.pdf"
                  SelectedValue="{Binding InputPath}"
                  SelectedIndex="{Binding SelectedIndex, Mode=OneWayToSource}"
                  SelectionChanged="StringItemDragDropListBox_SelectionChanged"
