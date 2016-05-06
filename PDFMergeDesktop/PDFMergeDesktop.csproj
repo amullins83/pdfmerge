@@ -77,6 +77,11 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>MainWindowStrings.resx</DependentUpon>
     </Compile>
+    <Compile Include="Resources\MergerStrings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>MergerStrings.resx</DependentUpon>
+    </Compile>
     <Compile Include="StringItem.cs" />
     <Compile Include="StringItemDragDropListBox.cs" />
     <Page Include="MainWindow.xaml">
@@ -116,6 +121,10 @@
     <EmbeddedResource Include="Resources\MainWindowStrings.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>MainWindowStrings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\MergerStrings.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>MergerStrings.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">

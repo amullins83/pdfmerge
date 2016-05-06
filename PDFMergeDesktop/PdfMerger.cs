@@ -5,6 +5,7 @@
     using System.ComponentModel;
     using System.IO;
     using System.Threading.Tasks;
+    using System.Windows;
 
     using iTextSharp.text;
     using iTextSharp.text.pdf;
@@ -203,16 +204,32 @@
                      try
                      {
                          reader = new PdfReader(path);
-                         PdfReader.unethicalreading = true;
                      }
-                     catch (IOException)
+                     catch (IOException e)
                      {
+                         MessageBox.Show(
+                             string.Format(Resources.MergerStrings.OpenError, path, e.Message),
+                             Resources.MergerStrings.OpenErrorCaption,
+                             MessageBoxButton.OK,
+                             MessageBoxImage.Error);
                      }
                  });
 
             // Opening the PDF failed.
             if (reader == null)
             {
+                return;
+            }
+
+            // We cannot copy PDF's with owner passwords
+            if (!reader.IsOpenedWithFullPermissions)
+            {
+                MessageBox.Show(
+                    string.Format(Resources.MergerStrings.OwnerPasswordError, path),
+                    Resources.MergerStrings.OwnerPasswordErrorCaption,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+
                 return;
             }
 
