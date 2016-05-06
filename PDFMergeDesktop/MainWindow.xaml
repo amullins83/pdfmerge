@@ -4,7 +4,7 @@
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:local="clr-namespace:PDFMergeDesktop"
         xmlns:resource="clr-namespace:PDFMergeDesktop.Resources"
-        Title="MainWindow" Height="350" Width="525">
+        Title="{x:Static resource:MainWindowStrings.Title}" Height="350" Width="525">
     <Window.Resources>
         <Style x:Key="DefaultTextBlockStyle" TargetType="TextBlock">
             <Setter Property="Margin" Value="3"/>
@@ -25,14 +25,50 @@
         </Style>
         <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </Window.Resources>
+    <Window.CommandBindings>
+        <CommandBinding Command="New" CanExecute="CanExecuteUnlessProcessing" Executed="NewCommand_Executed"/>
+        <CommandBinding Command="Open" CanExecute="CanExecuteUnlessProcessing" Executed="OpenCommand_Executed"/>
+        <CommandBinding Command="Save" CanExecute="SaveCommand_CanExecute" Executed="SaveCommand_Executed"/>
+        <CommandBinding Command="Delete" CanExecute="DeleteCommand_CanExecute" Executed="DeleteCommand_Executed"/>
+        <CommandBinding Command="{x:Static local:MainWindow.ExitCommand}" CanExecute="CanExecuteUnlessProcessing" Executed="ExitCommand_Executed"/>
+    </Window.CommandBindings>
+    <Window.InputBindings>
+        <KeyBinding Command="{x:Static local:MainWindow.ExitCommand}" Key="Q" Modifiers="Ctrl"/>
+    </Window.InputBindings>
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid Grid.Row="1" Margin="5">
+        <Menu Grid.Row="0">
+            <MenuItem Header="{x:Static resource:MainWindowStrings.File}">
+                <MenuItem Command="New">
+                    <MenuItem.Icon>
+                        <Image Source="VSIcons/NewFile_16x.png"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Command="Save">
+                    <MenuItem.Icon>
+                        <Image Source="VSIcons/Save_16x.png"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Command="Open">
+                    <MenuItem.Icon>
+                        <Image Source="VSIcons/Open_16x.png"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator />
+                <MenuItem Command="{x:Static local:MainWindow.ExitCommand}">
+                    <MenuItem.Icon>
+                        <Image Source="VSIcons/Close_16x.png"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+            </MenuItem>
+        </Menu>
+        <Grid Grid.Row="2" Margin="5">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -50,25 +86,29 @@
                      UpdateSourceTrigger=PropertyChanged}"
                      Style="{StaticResource DefaultTextBoxStyle}"/>
             <Button Grid.Row="1" Grid.Column="1"
-                    Content="{x:Static resource:MainWindowStrings.Browse}"
                     x:Uid="BrowseInputButton"
                     Style="{StaticResource DefaultButtonStyle}"
-                    Command="{Binding BrowseInputCommand, Mode=OneTime}"/>
+                    IsDefault="True"
+                    Command="{Binding BrowseInputCommand, Mode=OneTime}">
+                <Image Source="VSIcons/Browse_16x.png"/>
+            </Button>
             <Button Grid.Row="1" Grid.Column="2"
-                    Content="{x:Static resource:MainWindowStrings.Add}"
                     x:Uid="AddInputButton"
                     Style="{StaticResource DefaultButtonStyle}"
-                    Command="{Binding AddCommand, Mode=OneTime}"/>
+                    Command="{Binding AddCommand, Mode=OneTime}">
+                <Image Source="VSIcons/Add_16x.png"/>
+            </Button>
             <Button Grid.Row="1" Grid.Column="3"
-                    Content="{x:Static resource:MainWindowStrings.Remove}"
                     x:Uid="RemoveButton"
                     Style="{StaticResource DefaultButtonStyle}"
-                    Command="{Binding RemoveCommand, Mode=OneTime}"/>
+                    Command="{Binding RemoveCommand, Mode=OneTime}">
+                <Image Source="VSIcons/Cancel_16x.png"/>
+            </Button>
         </Grid>
         <local:StringItemDragDropListBox
                  x:Name="InputsBox"
                  ItemsSource="{Binding InputPaths}"
-                 Grid.Row="2"
+                 Grid.Row="3"
                  FileFilter="*.pdf"
                  SelectedValue="{Binding InputPath}"
                  SelectedIndex="{Binding SelectedIndex, Mode=OneWayToSource}"
@@ -79,12 +119,26 @@
                     Converter={StaticResource BooleanToVisibilityConverter},
                     ConverterParameter=Invert}"/>
         <ProgressBar 
-            Grid.Row="2"
+            Grid.Row="3"
             Value="{Binding PercentComplete}"
             Visibility="{Binding IsProcessing,
                 Converter={StaticResource BooleanToVisibilityConverter}}"/>
-        <Button Grid.Row="3" Style="{StaticResource BottomButtonStyle}" Content="{x:Static resource:MainWindowStrings.Merge}"
+        <Button Grid.Row="4" Style="{StaticResource BottomButtonStyle}"
                     x:Uid="MergeButton"
-                    Command="{Binding MergeCommand}" Background="#FF33B23E" Foreground="White"/>
+                    Command="{Binding MergeCommand}" Background="#FF33B23E" Foreground="White">
+            <StackPanel Orientation="Horizontal">
+                <Image Source="VSIcons/ContractArrow_16x.png" RenderTransformOrigin="0.5,0.5">
+                    <Image.RenderTransform>
+                        <TransformGroup>
+                            <ScaleTransform ScaleX="2" ScaleY="2"/>
+                            <SkewTransform/>
+                            <RotateTransform/>
+                            <TranslateTransform/>
+                        </TransformGroup>
+                    </Image.RenderTransform>
+                </Image>
+                <TextBlock Text="{x:Static resource:MainWindowStrings.Merge}" Margin="15,0,0,0"/>
+            </StackPanel>
+        </Button>
     </Grid>
 </Window>

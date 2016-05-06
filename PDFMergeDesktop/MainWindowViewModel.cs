@@ -8,6 +8,7 @@
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
+    using System.Windows;
     using System.Windows.Input;
     using System.Windows.Threading;
 
@@ -254,6 +255,59 @@
         }
 
         /// <summary>
+        ///  Remove the selected items from the list.
+        /// </summary>
+        public void Remove()
+        {
+            if (RemoveCanExecute(null))
+            {
+                RemoveExecute(null);
+            }
+        }
+
+        /// <summary>
+        ///  Reset the window to an empty state.
+        /// </summary>
+        public void Reset()
+        {
+            InputPaths.Clear();
+            InputPath = string.Empty;
+            OutputPath = string.Empty;
+        }
+
+        /// <summary>
+        ///  Save the state of the window.
+        /// </summary>
+        public void Save()
+        {
+            var path = BrowseFile.Save(
+                Resources.MainWindowStrings.Save,
+                Resources.MainWindowStrings.ProjectFilter,
+                Application.Current.MainWindow);
+
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                SaveStateToFile(path);
+            }
+        }
+
+        /// <summary>
+        ///  Load a saved window state.
+        /// </summary>
+        public void Open()
+        {
+            var paths = BrowseFile.Open(
+                Resources.MainWindowStrings.Open,
+                Resources.MainWindowStrings.ProjectFilter,
+                Application.Current.MainWindow);
+
+            if (paths.Any(p => !string.IsNullOrWhiteSpace(p)))
+            {
+                LoadStateFromFile(paths.First(p => !string.IsNullOrWhiteSpace(p)));
+            }
+        }
+
+        /// <summary>
         ///  Update the percent completion.
         /// </summary>
         /// <param name="progress">The new completion percentage.</param>
@@ -284,7 +338,7 @@
             var paths = BrowseFile.Open(
                 Resources.MainWindowStrings.AddInput,
                 Resources.MainWindowStrings.FileFilter,
-                App.Current.MainWindow);
+                Application.Current.MainWindow);
             if (paths.Any())
             {
                 AddPaths(paths);
@@ -323,9 +377,20 @@
         private bool AddCanExecute(object parameter)
         {
             return inputPath != null &&
+                   NoneMatch(inputPath) &&
                    !Path.GetInvalidPathChars().Any(c => inputPath.Contains(c)) &&
                    StringComparer.CurrentCultureIgnoreCase.Equals(Path.GetExtension(inputPath), ".pdf") &&
                    File.Exists(inputPath);
+        }
+
+        /// <summary>
+        ///  Determine whether any input paths in the list match the given path.
+        /// </summary>
+        /// <param name="path">The path to match against the list.</param>
+        /// <returns>A value indicating whether any input paths in the list match the given path.</returns>
+        private bool NoneMatch(string path)
+        {
+            return !InputPaths.Any(p => StringComparer.CurrentCultureIgnoreCase.Equals(p.Text, inputPath));
         }
 
         /// <summary>
@@ -364,7 +429,7 @@
             OutputPath = BrowseFile.Save(
                 Resources.MainWindowStrings.SetOutput,
                 Resources.MainWindowStrings.FileFilter,
-                App.Current.MainWindow);
+                Application.Current.MainWindow);
 
             if (string.IsNullOrWhiteSpace(OutputPath))
             {
@@ -400,6 +465,40 @@
         private void RaiseCanMergeChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             mergeCommand.RaiseCanExecuteChanged();
+        }
+
+        /// <summary>
+        ///  Save window state to a file.
+        /// </summary>
+        /// <param name="path">The path to the file into which window state will be saved.</param>
+        private void SaveStateToFile(string path)
+        {
+            var data = new MergeStateDataObject(this);
+            if (data.DidLoad)
+            {
+                data.Save(path);
+            }
+        }
+
+        /// <summary>
+        ///  Load window state from a file.
+        /// </summary>
+        /// <param name="path">The path to the file from which to load window state.</param>
+        private void LoadStateFromFile(string path)
+        {
+            var data = new MergeStateDataObject(path);
+            if (!data.DidLoad)
+            {
+                return;
+            }
+
+            InputPaths.Clear();
+            foreach (var inputPath in data.InputPaths)
+            {
+                InputPaths.Add(new StringItem(inputPath));
+            }
+
+            OutputPath = data.OutputPath;
         }
     }
 }

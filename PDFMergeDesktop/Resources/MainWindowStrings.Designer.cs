@@ -97,6 +97,60 @@ namespace PDFMergeDesktop.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The following error occurred while loading the project: {0}.
+        /// </summary>
+        public static string ErrorOnLoad {
+            get {
+                return ResourceManager.GetString("ErrorOnLoad", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Error Loading Project.
+        /// </summary>
+        public static string ErrorOnLoadCaption {
+            get {
+                return ResourceManager.GetString("ErrorOnLoadCaption", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The following error occurred while saving the project: {0}.
+        /// </summary>
+        public static string ErrorOnSave {
+            get {
+                return ResourceManager.GetString("ErrorOnSave", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Error Saving Project.
+        /// </summary>
+        public static string ErrorOnSaveCaption {
+            get {
+                return ResourceManager.GetString("ErrorOnSaveCaption", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to E_xit.
+        /// </summary>
+        public static string Exit {
+            get {
+                return ResourceManager.GetString("Exit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to _File.
+        /// </summary>
+        public static string File {
+            get {
+                return ResourceManager.GetString("File", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to PDF file (*.pdf)|*.pdf.
         /// </summary>
         public static string FileFilter {
@@ -151,11 +205,38 @@ namespace PDFMergeDesktop.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to _New.
+        /// </summary>
+        public static string New {
+            get {
+                return ResourceManager.GetString("New", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to _Open.
+        /// </summary>
+        public static string Open {
+            get {
+                return ResourceManager.GetString("Open", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Output Path.
         /// </summary>
         public static string OutputPath {
             get {
                 return ResourceManager.GetString("OutputPath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Project file (*.mergeproject)|*.mergeproject.
+        /// </summary>
+        public static string ProjectFilter {
+            get {
+                return ResourceManager.GetString("ProjectFilter", resourceCulture);
             }
         }
         
@@ -169,11 +250,29 @@ namespace PDFMergeDesktop.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to _Save.
+        /// </summary>
+        public static string Save {
+            get {
+                return ResourceManager.GetString("Save", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Set Destination Path.
         /// </summary>
         public static string SetOutput {
             get {
                 return ResourceManager.GetString("SetOutput", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to PDF Merge.
+        /// </summary>
+        public static string Title {
+            get {
+                return ResourceManager.GetString("Title", resourceCulture);
             }
         }
     }

@@ -203,6 +203,7 @@
                      try
                      {
                          reader = new PdfReader(path);
+                         PdfReader.unethicalreading = true;
                      }
                      catch (IOException)
                      {
