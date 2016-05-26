@@ -5,6 +5,9 @@
         xmlns:local="clr-namespace:PDFMergeDesktop"
         xmlns:resource="clr-namespace:PDFMergeDesktop.Resources"
         Title="{x:Static resource:MainWindowStrings.Title}" Height="350" Width="525">
+    <!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
     <Window.Resources>
         <Style x:Key="DefaultTextBlockStyle" TargetType="TextBlock">
             <Setter Property="Margin" Value="3"/>
@@ -31,6 +34,7 @@
         <CommandBinding Command="Save" CanExecute="SaveCommand_CanExecute" Executed="SaveCommand_Executed"/>
         <CommandBinding Command="Delete" CanExecute="DeleteCommand_CanExecute" Executed="DeleteCommand_Executed"/>
         <CommandBinding Command="{x:Static local:MainWindow.ExitCommand}" CanExecute="CanExecuteUnlessProcessing" Executed="ExitCommand_Executed"/>
+        <CommandBinding Command="{x:Static local:MainWindow.AboutCommand}" CanExecute="CanExecuteUnlessProcessing" Executed="AboutCommand_Executed"/>
     </Window.CommandBindings>
     <Window.InputBindings>
         <KeyBinding Command="{x:Static local:MainWindow.ExitCommand}" Key="Q" Modifiers="Ctrl"/>
@@ -64,6 +68,13 @@
                 <MenuItem Command="{x:Static local:MainWindow.ExitCommand}">
                     <MenuItem.Icon>
                         <Image Source="VSIcons/Close_16x.png"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+            </MenuItem>
+            <MenuItem Header="{x:Static resource:MainWindowStrings.Help}">
+                <MenuItem Command="{x:Static local:MainWindow.AboutCommand}">
+                    <MenuItem.Icon>
+                        <Image Source="VSIcons/UIAboutBox_16x.png"/>
                     </MenuItem.Icon>
                 </MenuItem>
             </MenuItem>

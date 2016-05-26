@@ -1,8 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- This Source Code Form is subject to the terms of the Mozilla Public
-   - License, v. 2.0. If a copy of the MPL was not distributed with this
-   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
   <!-- 
     Microsoft ResX Schema 
     
@@ -120,16 +117,31 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="OpenError" xml:space="preserve">
-    <value>An error occurred while opening {0}: {1}</value>
+  <data name="Author" xml:space="preserve">
+    <value>Austin Mullins</value>
   </data>
-  <data name="OpenErrorCaption" xml:space="preserve">
-    <value>Error Opening File</value>
+  <data name="AuthorFormat" xml:space="preserve">
+    <value>Author: {0}</value>
   </data>
-  <data name="OwnerPasswordError" xml:space="preserve">
-    <value>The file {0} is locked with an owner password and cannot be copied</value>
+  <data name="Copyright" xml:space="preserve">
+    <value>©2016 Walke Designs</value>
   </data>
-  <data name="OwnerPasswordErrorCaption" xml:space="preserve">
-    <value>Error Opening File</value>
+  <data name="LicenseLabel" xml:space="preserve">
+    <value>License</value>
+  </data>
+  <data name="OpenSourceDescription" xml:space="preserve">
+    <value>The source code for this program is available at https://github.com/amullins83/pdfmerge. It is intended to be compatible with the Mozilla Public License version 2.0 (MPL 2.0). A copy of this license is included in the install folder of this program.</value>
+  </data>
+  <data name="ProductName" xml:space="preserve">
+    <value>PDF Merge</value>
+  </data>
+  <data name="TextSharpDisclaimer" xml:space="preserve">
+    <value>This project utilizes the LGPL version of the open-source iTextSharp library. Code is available at https://github.com/itext/itextsharp. The binary iTextSharp.dll is available in the install folder of this program. It was retrieved via the NuGet package named iTextSharp-LGPL.</value>
+  </data>
+  <data name="Title" xml:space="preserve">
+    <value>About PDF Merge</value>
+  </data>
+  <data name="VersionFormat" xml:space="preserve">
+    <value>Version: {0}</value>
   </data>
 </root>

@@ -1,4 +1,8 @@
-﻿namespace PDFMergeDesktop
+﻿/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+namespace PDFMergeDesktop
 {
     using System;
     using System.Collections.ObjectModel;
@@ -198,22 +202,7 @@
         {
             var content = writer.DirectContent;
 
-            PdfReader reader = null;
-            await Task.Run(() =>
-                 {
-                     try
-                     {
-                         reader = new PdfReader(path);
-                     }
-                     catch (IOException e)
-                     {
-                         MessageBox.Show(
-                             string.Format(Resources.MergerStrings.OpenError, path, e.Message),
-                             Resources.MergerStrings.OpenErrorCaption,
-                             MessageBoxButton.OK,
-                             MessageBoxImage.Error);
-                     }
-                 });
+            PdfReader reader = await GetReaderFor(path);
 
             // Opening the PDF failed.
             if (reader == null)
@@ -221,7 +210,7 @@
                 return;
             }
 
-            // We cannot copy PDF's with owner passwords
+            // We cannot copy PDFs with owner passwords
             if (!reader.IsOpenedWithFullPermissions)
             {
                 MessageBox.Show(
@@ -233,6 +222,47 @@
                 return;
             }
 
+            await GetPages(content, reader);
+        }
+
+        /// <summary>
+        ///  Create a <see cref="PdfReader"/> object from the file at the given path.
+        /// </summary>
+        /// <param name="path">The path to a PDF file.</param>
+        /// <returns>An await-able task that eventually contains a <see cref="PdfReader"/> result if successful.</returns>
+        private async Task<PdfReader> GetReaderFor(string path)
+        {
+            PdfReader reader = null;
+
+            await Task.Run(() =>
+            {
+                try
+                {
+                    reader = new PdfReader(path);
+                }
+                catch (IOException e)
+                {
+                    MessageBox.Show(
+                        string.Format(Resources.MergerStrings.OpenError, path, e.Message),
+                        Resources.MergerStrings.OpenErrorCaption,
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
+            });
+
+            return reader;
+        }
+
+        /// <summary>
+        ///  Copy pages from the given reader into the given content.
+        /// </summary>
+        /// <param name="content">The content container into which data will be copied</param>
+        /// <param name="reader">
+        ///  The reader to collect data from a PDF document that has been opened with full permissions
+        /// </param>
+        /// <returns>An await-able task that will complete when all pages are copied</returns>
+        private async Task GetPages(PdfContentByte content, PdfReader reader)
+        {
             int pageCount = reader.NumberOfPages;
             for (int currentPage = 1; currentPage <= pageCount; currentPage++)
             {

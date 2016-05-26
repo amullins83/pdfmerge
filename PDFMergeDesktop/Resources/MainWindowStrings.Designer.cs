@@ -61,6 +61,15 @@ namespace PDFMergeDesktop.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to _About.
+        /// </summary>
+        public static string About {
+            get {
+                return ResourceManager.GetString("About", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Add.
         /// </summary>
         public static string Add {
@@ -165,6 +174,15 @@ namespace PDFMergeDesktop.Resources {
         public static string FilesToMerge {
             get {
                 return ResourceManager.GetString("FilesToMerge", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to _Help.
+        /// </summary>
+        public static string Help {
+            get {
+                return ResourceManager.GetString("Help", resourceCulture);
             }
         }
         

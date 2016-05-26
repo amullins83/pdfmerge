@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Wix xmlns="http://schemas.microsoft.com/wix/schemas/v4/wxs">
+  <!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 	<Product Id="*" Name="PDFMergeInstaller" Language="1033" Version="1.0.0.0" Manufacturer="" UpgradeCode="d83a72aa-789c-48c0-8a97-cdc104f8757f">
 		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
@@ -28,13 +31,13 @@
 	<Fragment>
 		<ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
       <Component Id="ProductComponent" Guid="{11EC48BC-A832-4B75-A62A-F68A8899E70A}">
-        <File Source="$(var.PdfMergeDesktop.TargetPath)" Id="ProductExe"/>
+        <File Source="$(var.PdfMergeDesktop.TargetDir)$(var.PdfMergeDesktop.ProjectName).exe" Id="ProductExe"/>
       </Component>
       <Component Id="TextSharpDLL" Guid="{BD59BA5F-8C8A-4CEB-B47F-4029A3FBA2DC}">
-        <File Source="$(var.PdfMergeDesktop.TargetDir)iTextSharp.dll" />
+        <File Source="$(var.PdfMergeDesktop.OutputPath)iTextSharp.dll" />
       </Component>
       <Component Id="AutomationDLL" Guid="{09AD13DE-2B2A-4FC6-823C-0CE897FFDB30}">
-        <File Source="$(var.PdfMergeDesktop.TargetDir)System.Management.Automation.dll" />
+        <File Source="$(var.PdfMergeDesktop.OutputPath)System.Management.Automation.dll" />
       </Component>
 		</ComponentGroup>
     <ComponentGroup Id="StartMenuComponents" Directory="ApplicationProgramsFolder">

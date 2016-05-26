@@ -1,4 +1,8 @@
-﻿namespace PDFMergeDesktop
+﻿/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+namespace PDFMergeDesktop
 {
     using System.Collections.Generic;
     using System.Linq;
@@ -18,6 +22,14 @@
             PDFMergeDesktop.Resources.MainWindowStrings.Exit,
             "Exit",
             typeof(MainWindow));
+
+        /// <summary>
+        ///  The about command, which launches the about window.
+        /// </summary>
+        private static RoutedUICommand aboutCommand = new RoutedUICommand(
+            PDFMergeDesktop.Resources.MainWindowStrings.About,
+            "About",
+            typeof(MainWindow));
      
         /// <summary>
         ///  The view model for the window.
@@ -25,12 +37,14 @@
         private MainWindowViewModel viewModel = new MainWindowViewModel();
         
         /// <summary>
-        ///  Initializes static members of the <see cref="MainWindow"/> class by registering the exit command.
+        ///  Initializes static members of the <see cref="MainWindow"/> class by registering commands.
         /// </summary>
         static MainWindow()
         {
             var exitBinding = new CommandBinding(exitCommand);
             CommandManager.RegisterClassCommandBinding(typeof(MainWindow), exitBinding);
+            var aboutBinding = new CommandBinding(aboutCommand);
+            CommandManager.RegisterClassCommandBinding(typeof(MainWindow), aboutBinding);
         }
 
         /// <summary>
@@ -48,6 +62,14 @@
         public static RoutedUICommand ExitCommand
         {
             get { return exitCommand; }
+        }
+
+        /// <summary>
+        ///  Gets the about command.
+        /// </summary>
+        public static RoutedUICommand AboutCommand
+        {
+            get { return aboutCommand; }
         }
 
         /// <summary>
@@ -148,6 +170,17 @@
         private void ExitCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             Close();
+        }
+
+        /// <summary>
+        ///  Execute the about command by launching the about window.
+        /// </summary>
+        /// <param name="sender">The command that raised the event (ignored).</param>
+        /// <param name="e">The event arguments (ignored).</param>
+        private void AboutCommand_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            var about = new AboutPdfMerge();
+            about.ShowDialog();
         }
     }
 }
