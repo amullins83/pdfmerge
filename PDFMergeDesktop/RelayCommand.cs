@@ -17,12 +17,12 @@ namespace PDFMergeDesktop
         /// <summary>
         ///  The action to be performed by the command.
         /// </summary>
-        private Action<object> action;
+        private readonly Action<object> action;
 
         /// <summary>
         ///  The predicate determining whether the action can be performed.
         /// </summary>
-        private Predicate<object> predicate;
+        private readonly Predicate<object> predicate;
 
         /// <summary>
         ///  Carry private delegate to avoid making user code call
@@ -86,7 +86,7 @@ namespace PDFMergeDesktop
         ///  Execute the command.
         /// </summary>
         /// <param name="parameter">The command parameter.</param>
-        public void Execute(object parameter)
+        public virtual void Execute(object parameter)
         {
             action.Invoke(parameter);
         }
@@ -94,7 +94,7 @@ namespace PDFMergeDesktop
         /// <summary>
         ///  Raise the <c>CanExecuteChanged</c> event.
         /// </summary>
-        public void RaiseCanExecuteChanged()
+        public void OnCanExecuteChanged()
         {
             canExecuteChanged(this, EventArgs.Empty);
         }

@@ -9,6 +9,7 @@ namespace PDFMergeDesktop
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
     using System.ComponentModel;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
@@ -19,7 +20,7 @@ namespace PDFMergeDesktop
     /// <summary>
     ///  The view model for the main page.
     /// </summary>
-    public class MainWindowViewModel : INotifyPropertyChanged, IProgress<int>
+    public sealed class MainWindowViewModel : INotifyPropertyChanged, IProgress<int>, IDisposable
     {
         /// <summary>
         ///  The current path to add to the collection.
@@ -29,27 +30,27 @@ namespace PDFMergeDesktop
         /// <summary>
         ///  The model for performing the merge task.
         /// </summary>
-        private PdfMerger merger;
+        private readonly PdfMerger merger;
 
         /// <summary>
         ///  Command to browse for input files.
         /// </summary>
-        private RelayCommand browseInputCommand;
+        private readonly RelayCommand browseInputCommand;
 
         /// <summary>
         ///  Command to add an input path to the collection.
         /// </summary>
-        private RelayCommand addCommand;
+        private readonly RelayCommand addCommand;
 
         /// <summary>
         ///  Command to remove an input path from the collection.
         /// </summary>
-        private RelayCommand removeCommand;
+        private readonly RelayCommand removeCommand;
 
         /// <summary>
         ///  Command to perform the merge task.
         /// </summary>
-        private RelayCommand mergeCommand;
+        private readonly RelayCommandAsync mergeCommand;
 
         /// <summary>
         ///  The progress for the current operation, if any.
@@ -59,7 +60,7 @@ namespace PDFMergeDesktop
         /// <summary>
         ///  The dispatcher for the GUI thread.
         /// </summary>
-        private Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
+        private readonly Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
 
         /// <summary>
         ///  A value indicating whether a merge is in progress.
@@ -88,8 +89,8 @@ namespace PDFMergeDesktop
             removeCommand = new RelayCommand(
                 new Action<object>(RemoveExecute),
                 new Predicate<object>(RemoveCanExecute));
-            mergeCommand = new RelayCommand(
-                new Action<object>(MergeExecute),
+            mergeCommand = new RelayCommandAsync(
+                new Func<object, Task>(MergeExecute),
                 new Predicate<object>(MergeCanExecute));
         }
 
@@ -117,7 +118,7 @@ namespace PDFMergeDesktop
                     OnPropertyChanged("OutputPath");
                     if (originalMergeCanExecute != MergeCanExecute(null))
                     {
-                        mergeCommand.RaiseCanExecuteChanged();
+                        mergeCommand.OnCanExecuteChanged();
                     }
                 }
             }
@@ -139,8 +140,8 @@ namespace PDFMergeDesktop
                 {
                     inputPath = value;
                     OnPropertyChanged("InputPath");
-                    addCommand.RaiseCanExecuteChanged();
-                    removeCommand.RaiseCanExecuteChanged();
+                    addCommand.OnCanExecuteChanged();
+                    removeCommand.OnCanExecuteChanged();
                 }
             }
         }
@@ -381,7 +382,7 @@ namespace PDFMergeDesktop
         private bool AddCanExecute(object parameter)
         {
             return inputPath != null &&
-                   NoneMatch(inputPath) &&
+                   NoneMatch() &&
                    !Path.GetInvalidPathChars().Any(c => inputPath.Contains(c)) &&
                    StringComparer.CurrentCultureIgnoreCase.Equals(Path.GetExtension(inputPath), ".pdf") &&
                    File.Exists(inputPath);
@@ -390,9 +391,8 @@ namespace PDFMergeDesktop
         /// <summary>
         ///  Determine whether any input paths in the list match the given path.
         /// </summary>
-        /// <param name="path">The path to match against the list.</param>
         /// <returns>A value indicating whether any input paths in the list match the given path.</returns>
-        private bool NoneMatch(string path)
+        private bool NoneMatch()
         {
             return !InputPaths.Any(p => StringComparer.CurrentCultureIgnoreCase.Equals(p.Text, inputPath));
         }
@@ -428,7 +428,7 @@ namespace PDFMergeDesktop
         ///  Execute the merge command.
         /// </summary>
         /// <param name="parameter">The command parameter (ignored).</param>
-        private void MergeExecute(object parameter)
+        private async Task MergeExecute(object parameter)
         {
             OutputPath = BrowseFile.Save(
                 Resources.MainWindowStrings.SetOutput,
@@ -442,13 +442,26 @@ namespace PDFMergeDesktop
 
             if (merger.CanMerge)
             {
-                merger.MergeAsync().ContinueWith(new Action<Task>((task) => IsProcessing = false));
                 IsProcessing = true;
+                await merger.MergeAsync().ConfigureAwait(false);
+                IsProcessing = false;
+                OpenPdfFromShell();
             }
             else
             {
-                System.Windows.MessageBox.Show(Resources.MainWindowStrings.CouldNotMerge);
+                MessageBox.Show(Resources.MainWindowStrings.CouldNotMerge);
             }
+        }
+
+        /// <summary>
+        /// Opens the completed document using the system's default program
+        /// </summary>
+        private void OpenPdfFromShell()
+        {
+            if (merger == null || !merger.DidCreatePdf || !File.Exists(OutputPath))
+                return;
+
+            Process.Start(OutputPath);
         }
 
         /// <summary>
@@ -468,7 +481,7 @@ namespace PDFMergeDesktop
         /// <param name="e">The event arguments (ignored).</param>
         private void RaiseCanMergeChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            mergeCommand.RaiseCanExecuteChanged();
+            mergeCommand.OnCanExecuteChanged();
         }
 
         /// <summary>
@@ -504,5 +517,29 @@ namespace PDFMergeDesktop
 
             OutputPath = data.OutputPath;
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        private void Dispose(bool disposing)
+        {
+            if (disposedValue)
+                return;
+
+            if (disposing)
+            {
+                merger?.Dispose();
+            }
+
+            disposedValue = true;
+        }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+        }
+        #endregion
     }
 }

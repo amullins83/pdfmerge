@@ -31,12 +31,11 @@ namespace PDFMergeDesktop
         }
 
         /// <summary>
-        ///  Gets or sets the input paths.
+        ///  Gets the input paths.
         /// </summary>
         public List<string> InputPaths
         {
             get { return inputPaths; }
-            set { inputPaths = value; }
         }
     }
 }

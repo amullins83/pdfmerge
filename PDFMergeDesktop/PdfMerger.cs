@@ -7,27 +7,22 @@ namespace PDFMergeDesktop
     using System;
     using System.Collections.ObjectModel;
     using System.ComponentModel;
+    using System.Globalization;
     using System.IO;
     using System.Threading.Tasks;
     using System.Windows;
 
-    using iTextSharp.text;
-    using iTextSharp.text.pdf;
+    using iText.Kernel.Pdf;
     
     /// <summary>
     ///  Merges a given collection of PDF files.
     /// </summary>
-    public class PdfMerger : INotifyPropertyChanged
+    public class PdfMerger : INotifyPropertyChanged, IDisposable
     {
         /// <summary>
         ///  The path to store the merged PDF file.
         /// </summary>
         private string outputPath;
-
-        /// <summary>
-        ///  Collection of paths to PDF files to merge.
-        /// </summary>
-        private ObservableCollection<StringItem> inputPaths = new ObservableCollection<StringItem>();
 
         /// <summary>
         ///  The writer object for this task.
@@ -37,7 +32,7 @@ namespace PDFMergeDesktop
         /// <summary>
         ///  The output document for this task.
         /// </summary>
-        private Document document = null;
+        private PdfDocument document = null;
 
         /// <summary>
         ///  The number of files to process.
@@ -80,17 +75,6 @@ namespace PDFMergeDesktop
         }
 
         /// <summary>
-        ///  Gets a collection of paths to PDF files to merge.
-        /// </summary>
-        public ObservableCollection<StringItem> InputPaths
-        {
-            get
-            {
-                return inputPaths;
-            }
-        }
-
-        /// <summary>
         ///  Gets or sets the report target for progress updates.
         /// </summary>
         public IProgress<int> Progress
@@ -119,16 +103,26 @@ namespace PDFMergeDesktop
             {
                 try
                 {
-                    outputPath = Path.GetFullPath(outputPath);
+                    outputPath = System.IO.Path.GetFullPath(outputPath);
                 }
-                catch
+                catch (IOException)
                 {
                     return false;
                 }
 
-                return inputPaths.Count > 1;
+                return InputPaths.Count > 1;
             }
         }
+
+        /// <summary>
+        /// Gets a collection of paths to files to merge
+        /// </summary>
+        public ObservableCollection<StringItem> InputPaths { get; } = new ObservableCollection<StringItem>();
+
+        /// <summary>
+        /// Gets a value indicating whether the merger created a PDF document.
+        /// </summary>
+        public bool DidCreatePdf { get; private set; } = false;
 
         /// <summary>
         ///  Merge the given files and store the output in the given destination.
@@ -142,9 +136,11 @@ namespace PDFMergeDesktop
                 return;
             }
 
-            await CreateDocument();
-            await MergeFiles();
+            DidCreatePdf = false;
+            await CreateDocument().ConfigureAwait(false);
+            await MergeFiles().ConfigureAwait(false);
             CloseDocument();
+            DidCreatePdf = true;
         }
 
         /// <summary>
@@ -165,10 +161,9 @@ namespace PDFMergeDesktop
              await Task.Run(() =>
                 {
                     var outputStream = new FileStream(outputPath, FileMode.Create);
-                    document = new Document();
-                    writer = PdfWriter.GetInstance(document, outputStream);
-                    document.Open();
-                });
+                    writer = new PdfWriter(outputStream);
+                    document = new PdfDocument(writer);
+                }).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -177,18 +172,18 @@ namespace PDFMergeDesktop
         /// <returns>An await-able task.</returns>
         private async Task MergeFiles()
         {
-            if (inputPaths.Count == 0)
+            if (InputPaths.Count == 0)
             {
                 return;
             }
 
-            fileCount = inputPaths.Count;
+            fileCount = InputPaths.Count;
             completedCount = 0;
             progress.Report(0);
             
-            foreach (var path in inputPaths)
+            foreach (var path in InputPaths)
             {
-                await AddPdf(path.Text);
+                await AddPdf(path.Text).ConfigureAwait(false);
                 progress.Report(++completedCount * 100 / fileCount);
             }
         }
@@ -200,29 +195,27 @@ namespace PDFMergeDesktop
         /// <returns>An await-able task.</returns>
         private async Task AddPdf(string path)
         {
-            var content = writer.DirectContent;
-
-            PdfReader reader = await GetReaderFor(path);
-
-            // Opening the PDF failed.
-            if (reader == null)
+            using (PdfReader reader = await GetReaderFor(path).ConfigureAwait(false))
             {
-                return;
+                // Opening the PDF failed.
+                if (reader == null)
+                {
+                    return;
+                }
+
+                // We cannot copy PDFs with owner passwords
+                if (!reader.IsOpenedWithFullPermission())
+                {
+                    MessageBox.Show(
+                        string.Format(CultureInfo.CurrentCulture, Resources.MergerStrings.OwnerPasswordError, path),
+                        Resources.MergerStrings.OwnerPasswordErrorCaption,
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                    return;
+                }
+
+                GetPages(reader);
             }
-
-            // We cannot copy PDFs with owner passwords
-            if (!reader.IsOpenedWithFullPermissions)
-            {
-                MessageBox.Show(
-                    string.Format(Resources.MergerStrings.OwnerPasswordError, path),
-                    Resources.MergerStrings.OwnerPasswordErrorCaption,
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-
-                return;
-            }
-
-            await GetPages(content, reader);
         }
 
         /// <summary>
@@ -230,7 +223,7 @@ namespace PDFMergeDesktop
         /// </summary>
         /// <param name="path">The path to a PDF file.</param>
         /// <returns>An await-able task that eventually contains a <see cref="PdfReader"/> result if successful.</returns>
-        private async Task<PdfReader> GetReaderFor(string path)
+        private static async Task<PdfReader> GetReaderFor(string path)
         {
             PdfReader reader = null;
 
@@ -243,12 +236,12 @@ namespace PDFMergeDesktop
                 catch (IOException e)
                 {
                     MessageBox.Show(
-                        string.Format(Resources.MergerStrings.OpenError, path, e.Message),
+                        string.Format(CultureInfo.CurrentCulture, Resources.MergerStrings.OpenError, path, e.Message),
                         Resources.MergerStrings.OpenErrorCaption,
                         MessageBoxButton.OK,
                         MessageBoxImage.Error);
                 }
-            });
+            }).ConfigureAwait(false);
 
             return reader;
         }
@@ -256,30 +249,17 @@ namespace PDFMergeDesktop
         /// <summary>
         ///  Copy pages from the given reader into the given content.
         /// </summary>
-        /// <param name="content">The content container into which data will be copied</param>
         /// <param name="reader">
         ///  The reader to collect data from a PDF document that has been opened with full permissions
         /// </param>
-        /// <returns>An await-able task that will complete when all pages are copied</returns>
-        private async Task GetPages(PdfContentByte content, PdfReader reader)
+        private void GetPages(PdfReader reader)
         {
-            int pageCount = reader.NumberOfPages;
-            for (int currentPage = 1; currentPage <= pageCount; currentPage++)
+            using (PdfDocument inputDoc = new PdfDocument(reader))
             {
-                document.SetPageSize(reader.GetPageSize(currentPage));
-                document.NewPage();
-                var page = await Task.Run<PdfImportedPage>(() =>
-                    writer.GetImportedPage(reader, currentPage));
-                var rotation = reader.GetPageRotation(currentPage);
-                if (rotation == 90 || rotation == 270)
+                int pageCount = inputDoc.GetNumberOfPages();
+                for (int pageNumber = 1; pageNumber <= pageCount; pageNumber++)
                 {
-                    // Add the page with a transform matrix that rotates 90 degrees.
-                    await Task.Run(() => content.AddTemplate(page, 0f, -1f, 1f, 0f, 0f, page.Height));
-                }
-                else
-                {
-                    // Add the page with an identity transform.
-                    await Task.Run(() => content.AddTemplate(page, 1f, 0f, 0f, 1f, 0f, 0f));
+                    document.AddPage(inputDoc.GetPage(pageNumber).CopyTo(document));
                 }
             }
         }
@@ -294,5 +274,31 @@ namespace PDFMergeDesktop
             document = null;
             writer = null;
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposedValue)
+                return;
+
+            if (disposing)
+            {
+                writer?.Dispose();
+                document?.Close();
+            }
+
+            disposedValue = true;
+        }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        #endregion
     }
 }

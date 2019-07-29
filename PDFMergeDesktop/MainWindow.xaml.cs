@@ -4,6 +4,7 @@
 
 namespace PDFMergeDesktop
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Windows;
@@ -13,7 +14,7 @@ namespace PDFMergeDesktop
     /// <summary>
     /// Interaction logic for <c>MainWindow.xaml</c>.
     /// </summary>
-    public partial class MainWindow : Window
+    public sealed partial class MainWindow : Window, IDisposable
     {
         /// <summary>
         ///  The exit command, which is somehow not a standard application command.
@@ -182,5 +183,29 @@ namespace PDFMergeDesktop
             var about = new AboutPdfMerge();
             about.ShowDialog();
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        private void Dispose(bool disposing)
+        {
+            if (disposedValue)
+                return;
+
+            if (disposing)
+            {
+                viewModel?.Dispose();
+            }
+
+            disposedValue = true;
+        }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+        }
+        #endregion
     }
 }

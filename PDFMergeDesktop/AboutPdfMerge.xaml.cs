@@ -1,6 +1,7 @@
 ﻿namespace PDFMergeDesktop
 {
     using System.Windows;
+    using System.Globalization;
     using static Resources.AboutStrings;
 
     /// <summary>
@@ -22,7 +23,7 @@
         /// </summary>
         public static string AuthorText
         {
-            get { return string.Format(AuthorFormat, Author); }
+            get { return string.Format(CultureInfo.CurrentCulture, AuthorFormat, Author); }
         }
 
         /// <summary>
@@ -30,7 +31,10 @@
         /// </summary>
         public static string VersionText
         {
-            get { return string.Format(VersionFormat, typeof(AboutPdfMerge).Assembly.GetName().Version); }
+            get { return string.Format(
+                CultureInfo.CurrentCulture,
+                VersionFormat,
+                typeof(AboutPdfMerge).Assembly.GetName().Version); }
         }
     }
 }

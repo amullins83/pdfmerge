@@ -5,9 +5,11 @@
 namespace PDFMergeDesktop
 {
     using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Windows;
+    using System.Xml;
     using System.Xml.Serialization;
 
     /// <summary>
@@ -36,7 +38,8 @@ namespace PDFMergeDesktop
         /// <param name="viewModel">The view model from which to extract data.</param>
         internal MergeStateDataObject(MainWindowViewModel viewModel)
         {
-            state.InputPaths = viewModel.InputPaths.Select(item => item.Text).ToList();
+            state.InputPaths.Clear();
+            state.InputPaths.AddRange(viewModel.InputPaths.Select(item => item.Text));
             state.OutputPath = viewModel.OutputPath;
             didLoad = true;
         }
@@ -49,7 +52,8 @@ namespace PDFMergeDesktop
         {
             try
             {
-                using (var file = new FileStream(path, FileMode.Open))
+                using (var file = new XmlTextReader(new FileStream(path, FileMode.Open))
+                                      { XmlResolver = null, DtdProcessing = DtdProcessing.Prohibit })
                 {
                     var serializer = new XmlSerializer(typeof(MergeState));
                     var newState = serializer.Deserialize(file) as MergeState;
@@ -64,7 +68,7 @@ namespace PDFMergeDesktop
             catch (IOException e)
             {
                 MessageBox.Show(
-                    string.Format(Resources.MainWindowStrings.ErrorOnLoad, e.Message),
+                    string.Format(CultureInfo.CurrentCulture, Resources.MainWindowStrings.ErrorOnLoad, e.Message),
                     Resources.MainWindowStrings.ErrorOnLoadCaption,
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
@@ -131,7 +135,7 @@ namespace PDFMergeDesktop
             catch (IOException e)
             {
                 MessageBox.Show(
-                    string.Format(Resources.MainWindowStrings.ErrorOnSave, e.Message),
+                    string.Format(CultureInfo.CurrentCulture, Resources.MainWindowStrings.ErrorOnSave, e.Message),
                     Resources.MainWindowStrings.ErrorOnSaveCaption,
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
