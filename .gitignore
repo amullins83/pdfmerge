@@ -190,3 +190,4 @@ ModelManifest.xml
 
 # Advanced Installer Cache
 **/*-cache
+**/*-SetupFiles
